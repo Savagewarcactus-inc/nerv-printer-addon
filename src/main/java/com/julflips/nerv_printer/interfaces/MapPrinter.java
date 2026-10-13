@@ -1,13 +1,13 @@
 package com.julflips.nerv_printer.interfaces;
 
-import net.minecraft.util.Pair;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
+import com.julflips.nerv_printer.utils.Tuple;
 
 public interface MapPrinter {
 
     void setLayer(boolean isUpper);
 
-    void setInterval(Pair<Integer, Integer> interval);
+    void setInterval(Tuple<Integer, Integer> interval);
 
     void mineLine(int minedLines);
 

@@ -1,7 +1,7 @@
 package com.julflips.nerv_printer.utils;
 
 import meteordevelopment.meteorclient.utils.player.ChatUtils;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import org.spongepowered.include.com.google.common.collect.BiMap;
 import org.spongepowered.include.com.google.common.collect.HashBiMap;
 
@@ -101,7 +101,7 @@ public final class LocalTCPTransport {
                 }
                 masterSocket = socket;
             }
-            writeLine(socket, "register:" + MinecraftClient.getInstance().getSession().getUsername());
+            writeLine(socket, "register:" + Minecraft.getInstance().getUser().getName());
             Thread readThread = new Thread(() -> readLoop(socket), "map-printer-tcp-client");
             readThread.setDaemon(true);
             readThread.start();

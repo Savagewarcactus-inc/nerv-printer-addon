@@ -3,27 +3,25 @@ package com.julflips.nerv_printer.utils;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.ItemEnchantmentsComponent;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.RegistryWrapper;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.Pair;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
+import com.julflips.nerv_printer.utils.Tuple;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
+import net.minecraft.world.phys.Vec3;
 
 public final class ConfigDeserializer {
 
@@ -35,18 +33,18 @@ public final class ConfigDeserializer {
         );
     }
 
-    private static Vec3d jsonToVec3d(JsonObject obj) {
-        return new Vec3d(
+    private static Vec3 jsonToVec3d(JsonObject obj) {
+        return new Vec3(
             obj.get("x").getAsDouble(),
             obj.get("y").getAsDouble(),
             obj.get("z").getAsDouble()
         );
     }
 
-    private static Pair<BlockPos, Vec3d> jsonToBlockPosVecPair(JsonObject obj) {
+    private static Tuple<BlockPos, Vec3> jsonToBlockPosVecPair(JsonObject obj) {
         BlockPos pos = jsonToBlockPos(obj.getAsJsonObject("blockPos"));
-        Vec3d openPos = jsonToVec3d(obj.getAsJsonObject("openPos"));
-        return new Pair<>(pos, openPos);
+        Vec3 openPos = jsonToVec3d(obj.getAsJsonObject("openPos"));
+        return new Tuple<>(pos, openPos);
     }
 
     /**
@@ -54,17 +52,17 @@ public final class ConfigDeserializer {
      */
     public static class ConfigData {
         public String type;
-        public Pair<BlockPos, Vec3d> reset;
-        public Pair<BlockPos, Vec3d> cartographyTable;
-        public Pair<BlockPos, Vec3d> finishedMapChest;
-        public Pair<BlockPos, Vec3d> usedToolChest;
-        public Pair<BlockPos, Vec3d> bed;
-        public ArrayList<Pair<BlockPos, Vec3d>> mapMaterialChests;
-        public Pair<Vec3d, Pair<Float, Float>> dumpStation;
-        public ArrayList<Pair<Vec3d, Pair<Float, Float>>> dumpStations;
+        public Tuple<BlockPos, Vec3> reset;
+        public Tuple<BlockPos, Vec3> cartographyTable;
+        public Tuple<BlockPos, Vec3> finishedMapChest;
+        public Tuple<BlockPos, Vec3> usedToolChest;
+        public Tuple<BlockPos, Vec3> bed;
+        public ArrayList<Tuple<BlockPos, Vec3>> mapMaterialChests;
+        public Tuple<Vec3, Tuple<Float, Float>> dumpStation;
+        public ArrayList<Tuple<Vec3, Tuple<Float, Float>>> dumpStations;
         public BlockPos mapCorner;
         public BlockPos upperMapCorner;
-        public HashMap<Item, ArrayList<Pair<BlockPos, Vec3d>>> materialDict;
+        public HashMap<Item, ArrayList<Tuple<BlockPos, Vec3>>> materialDict;
         public Set<ItemStack> toolSet;
     }
 
@@ -109,10 +107,10 @@ public final class ConfigDeserializer {
                 for (JsonElement e : root.getAsJsonArray("dumpStations")) {
                     JsonObject dump = e.getAsJsonObject();
 
-                    Vec3d pos = jsonToVec3d(dump.getAsJsonObject("pos"));
+                    Vec3 pos = jsonToVec3d(dump.getAsJsonObject("pos"));
                     float yaw = dump.get("yaw").getAsFloat();
                     float pitch = dump.get("pitch").getAsFloat();
-                    data.dumpStations.add(new Pair<>(pos, new Pair<>(yaw, pitch)));
+                    data.dumpStations.add(new Tuple<>(pos, new Tuple<>(yaw, pitch)));
                 }
             } else {
                 data.dumpStation = null;
@@ -129,9 +127,9 @@ public final class ConfigDeserializer {
             if (root.has("materialDict")) {
                 JsonObject materialDictObj = root.getAsJsonObject("materialDict");
                 for (String key : materialDictObj.keySet()) {
-                    Identifier id = Identifier.of(key);
-                    Item item = Registries.ITEM.get(id);
-                    ArrayList<Pair<BlockPos, Vec3d>> list = new ArrayList<>();
+                    Identifier id = Identifier.parse(key);
+                    Item item = BuiltInRegistries.ITEM.getValue(id);
+                    ArrayList<Tuple<BlockPos, Vec3>> list = new ArrayList<>();
                     for (JsonElement e : materialDictObj.getAsJsonArray(key)) {
                         list.add(jsonToBlockPosVecPair(e.getAsJsonObject()));
                     }
@@ -139,12 +137,12 @@ public final class ConfigDeserializer {
                 }
             }
 
-            if (net.minecraft.client.MinecraftClient.getInstance() == null
-                || net.minecraft.client.MinecraftClient.getInstance().world == null ) return data;
+            if (net.minecraft.client.Minecraft.getInstance() == null
+                || net.minecraft.client.Minecraft.getInstance().level == null ) return data;
 
             data.toolSet = new HashSet<>();
-            RegistryWrapper.WrapperLookup registries =
-                net.minecraft.client.MinecraftClient.getInstance().world.getRegistryManager();
+            HolderLookup.Provider registries =
+                net.minecraft.client.Minecraft.getInstance().level.registryAccess();
             if (root.has("toolSet") && root.get("toolSet").isJsonArray()) {
                 for (JsonElement e : root.getAsJsonArray("toolSet")) {
                     if (!e.isJsonObject()) continue;
@@ -161,32 +159,32 @@ public final class ConfigDeserializer {
         }
     }
 
-    private static ItemStack jsonToItemStack(JsonObject obj, RegistryWrapper.WrapperLookup registries) {
-        Identifier itemId = Identifier.of(obj.get("item").getAsString());
-        Item item = Registries.ITEM.get(itemId);
+    private static ItemStack jsonToItemStack(JsonObject obj, HolderLookup.Provider registries) {
+        Identifier itemId = Identifier.parse(obj.get("item").getAsString());
+        Item item = BuiltInRegistries.ITEM.getValue(itemId);
         ItemStack stack = new ItemStack(item);
         // Backward compatibility: older configs may not contain enchantments
         if (!obj.has("enchantments") || !obj.get("enchantments").isJsonArray()) {
             return stack;
         }
-        ItemEnchantmentsComponent.Builder builder =
-            new ItemEnchantmentsComponent.Builder(ItemEnchantmentsComponent.DEFAULT);
+        ItemEnchantments.Mutable builder =
+            new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);
         // Get the dynamic enchantment registry using our passed-in wrapper lookup
-        RegistryWrapper.Impl<Enchantment> enchantmentRegistry =
-            registries.getOrThrow(RegistryKeys.ENCHANTMENT);
+        HolderLookup.RegistryLookup<Enchantment> enchantmentRegistry =
+            registries.lookupOrThrow(Registries.ENCHANTMENT);
         for (JsonElement enchantmentElement : obj.getAsJsonArray("enchantments")) {
             if (!enchantmentElement.isJsonObject()) continue;
             JsonObject enchantmentObj = enchantmentElement.getAsJsonObject();
             if (!enchantmentObj.has("id") || !enchantmentObj.has("level")) continue;
-            Identifier enchantmentId = Identifier.of(enchantmentObj.get("id").getAsString());
+            Identifier enchantmentId = Identifier.parse(enchantmentObj.get("id").getAsString());
             int level = enchantmentObj.get("level").getAsInt();
             if (level <= 0) continue;
-            RegistryKey<Enchantment> enchantKey = RegistryKey.of(RegistryKeys.ENCHANTMENT, enchantmentId);
-            Optional<RegistryEntry.Reference<Enchantment>> enchantmentEntry =
-                enchantmentRegistry.getOptional(enchantKey);
-            enchantmentEntry.ifPresent(entry -> builder.add(entry, level));
+            ResourceKey<Enchantment> enchantKey = ResourceKey.create(Registries.ENCHANTMENT, enchantmentId);
+            Optional<Holder.Reference<Enchantment>> enchantmentEntry =
+                enchantmentRegistry.get(enchantKey);
+            enchantmentEntry.ifPresent(entry -> builder.upgrade(entry, level));
         }
-        stack.set(DataComponentTypes.ENCHANTMENTS, builder.build());
+        stack.set(DataComponents.ENCHANTMENTS, builder.toImmutable());
         return stack;
     }
 }

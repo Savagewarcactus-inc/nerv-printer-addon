@@ -3,9 +3,8 @@ package com.julflips.nerv_printer.utils;
 import com.julflips.nerv_printer.interfaces.MapPrinter;
 import com.julflips.nerv_printer.modules.SuppressionPrinter;
 import meteordevelopment.meteorclient.utils.player.ChatUtils;
-import net.minecraft.util.Pair;
-import net.minecraft.util.math.BlockPos;
-
+import net.minecraft.core.BlockPos;
+import com.julflips.nerv_printer.utils.Tuple;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -114,10 +113,10 @@ public final class SlaveSystem {
 
     public static void generateIntervals(ArrayList<String> slaveList) {
         int sectionSize = (int) Math.ceil((float) 128 / (float) (slaveList.size() + 1));
-        ArrayList<Pair<Integer, Integer>> intervals = new ArrayList<>();
+        ArrayList<Tuple<Integer, Integer>> intervals = new ArrayList<>();
         for (int end = 127; end >= 0; end -= sectionSize) {
             int start = Math.max(0, end - sectionSize + 1);
-            intervals.add(new Pair<>(start, end));
+            intervals.add(new Tuple<>(start, end));
         }
         Collections.reverse(intervals);
 
@@ -130,7 +129,7 @@ public final class SlaveSystem {
 
         for (int i = 0; i < intervals.size() && i < sortedSlaves.size(); i++) {
             String slave = sortedSlaves.get(i);
-            sendToSlave(slave, "interval:" + intervals.get(i).getLeft() + ":" + intervals.get(i).getRight());
+            sendToSlave(slave, "interval:" + intervals.get(i).getA() + ":" + intervals.get(i).getB());
         }
     }
 
@@ -161,7 +160,7 @@ public final class SlaveSystem {
                     break;
                 case "interval":
                     if (colonSplit.length >= 3) {
-                        Pair<Integer, Integer> interval = new Pair<>(Integer.valueOf(colonSplit[1]), Integer.valueOf(colonSplit[2]));
+                        Tuple<Integer, Integer> interval = new Tuple<>(Integer.valueOf(colonSplit[1]), Integer.valueOf(colonSplit[2]));
                         printerModule.setInterval(interval);
                     }
                     break;

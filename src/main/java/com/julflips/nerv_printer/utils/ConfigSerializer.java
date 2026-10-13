@@ -4,18 +4,17 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.Pair;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import com.julflips.nerv_printer.utils.Tuple;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.Vec3;
 
 public final class ConfigSerializer {
 
@@ -27,7 +26,7 @@ public final class ConfigSerializer {
         return obj;
     }
 
-    private static JsonObject vec3dToJson(Vec3d vec) {
+    private static JsonObject vec3dToJson(Vec3 vec) {
         JsonObject obj = new JsonObject();
         obj.addProperty("x", vec.x);
         obj.addProperty("y", vec.y);
@@ -35,10 +34,10 @@ public final class ConfigSerializer {
         return obj;
     }
 
-    private static JsonObject blockPosVecPairToJson(Pair<BlockPos, Vec3d> pair) {
+    private static JsonObject blockPosVecPairToJson(Tuple<BlockPos, Vec3> pair) {
         JsonObject obj = new JsonObject();
-        obj.add("blockPos", blockPosToJson(pair.getLeft()));
-        obj.add("openPos", vec3dToJson(pair.getRight()));
+        obj.add("blockPos", blockPosToJson(pair.getA()));
+        obj.add("openPos", vec3dToJson(pair.getB()));
         return obj;
     }
 
@@ -46,13 +45,13 @@ public final class ConfigSerializer {
     public static void writeToJson(
         Path file,
         String type,
-        Pair<BlockPos, Vec3d> reset,
-        Pair<BlockPos, Vec3d> cartographyTable,
-        Pair<BlockPos, Vec3d> finishedMapChest,
-        ArrayList<Pair<BlockPos, Vec3d>> mapMaterialChests,
-        Pair<Vec3d, Pair<Float, Float>> dumpStation,
+        Tuple<BlockPos, Vec3> reset,
+        Tuple<BlockPos, Vec3> cartographyTable,
+        Tuple<BlockPos, Vec3> finishedMapChest,
+        ArrayList<Tuple<BlockPos, Vec3>> mapMaterialChests,
+        Tuple<Vec3, Tuple<Float, Float>> dumpStation,
         BlockPos mapCorner,
-        HashMap<Item, ArrayList<Pair<BlockPos, Vec3d>>> materialDict
+        HashMap<Item, ArrayList<Tuple<BlockPos, Vec3>>> materialDict
     ) throws IOException {
         writeToJson(file, type, reset, cartographyTable, finishedMapChest, null, null, mapMaterialChests,
             new ArrayList<>(List.of(dumpStation)), mapCorner, null, materialDict, null);
@@ -62,14 +61,14 @@ public final class ConfigSerializer {
     public static void writeToJson(
         Path file,
         String type,
-        Pair<BlockPos, Vec3d> cartographyTable,
-        Pair<BlockPos, Vec3d> finishedMapChest,
-        Pair<BlockPos, Vec3d> usedToolChest,
-        Pair<BlockPos, Vec3d> bed,
-        ArrayList<Pair<BlockPos, Vec3d>> mapMaterialChests,
-        Pair<Vec3d, Pair<Float, Float>> dumpStation,
+        Tuple<BlockPos, Vec3> cartographyTable,
+        Tuple<BlockPos, Vec3> finishedMapChest,
+        Tuple<BlockPos, Vec3> usedToolChest,
+        Tuple<BlockPos, Vec3> bed,
+        ArrayList<Tuple<BlockPos, Vec3>> mapMaterialChests,
+        Tuple<Vec3, Tuple<Float, Float>> dumpStation,
         BlockPos mapCorner,
-        HashMap<Item, ArrayList<Pair<BlockPos, Vec3d>>> materialDict,
+        HashMap<Item, ArrayList<Tuple<BlockPos, Vec3>>> materialDict,
         Set<ItemStack> toolSet
     ) throws IOException {
         writeToJson(file, type, null, cartographyTable, finishedMapChest, usedToolChest, bed, mapMaterialChests,
@@ -80,14 +79,14 @@ public final class ConfigSerializer {
     public static void writeToJson(
         Path file,
         String type,
-        Pair<BlockPos, Vec3d> cartographyTable,
-        Pair<BlockPos, Vec3d> finishedMapChest,
-        Pair<BlockPos, Vec3d> usedToolChest,
-        ArrayList<Pair<BlockPos, Vec3d>> mapMaterialChests,
-        ArrayList<Pair<Vec3d, Pair<Float, Float>>> dumpStations,
+        Tuple<BlockPos, Vec3> cartographyTable,
+        Tuple<BlockPos, Vec3> finishedMapChest,
+        Tuple<BlockPos, Vec3> usedToolChest,
+        ArrayList<Tuple<BlockPos, Vec3>> mapMaterialChests,
+        ArrayList<Tuple<Vec3, Tuple<Float, Float>>> dumpStations,
         BlockPos mapCorner,
         BlockPos upperMapCorner,
-        HashMap<Item, ArrayList<Pair<BlockPos, Vec3d>>> materialDict,
+        HashMap<Item, ArrayList<Tuple<BlockPos, Vec3>>> materialDict,
         Set<ItemStack> toolSet
     ) throws IOException {
         writeToJson(file, type, null, cartographyTable, finishedMapChest, usedToolChest, null,
@@ -97,16 +96,16 @@ public final class ConfigSerializer {
     public static void writeToJson(
         Path file,
         String type,
-        Pair<BlockPos, Vec3d> reset,
-        Pair<BlockPos, Vec3d> cartographyTable,
-        Pair<BlockPos, Vec3d> finishedMapChest,
-        Pair<BlockPos, Vec3d> usedToolChest,
-        Pair<BlockPos, Vec3d> bed,
-        ArrayList<Pair<BlockPos, Vec3d>> mapMaterialChests,
-        ArrayList<Pair<Vec3d, Pair<Float, Float>>> dumpStations,
+        Tuple<BlockPos, Vec3> reset,
+        Tuple<BlockPos, Vec3> cartographyTable,
+        Tuple<BlockPos, Vec3> finishedMapChest,
+        Tuple<BlockPos, Vec3> usedToolChest,
+        Tuple<BlockPos, Vec3> bed,
+        ArrayList<Tuple<BlockPos, Vec3>> mapMaterialChests,
+        ArrayList<Tuple<Vec3, Tuple<Float, Float>>> dumpStations,
         BlockPos mapCorner,
         BlockPos upperMapCorner,
-        HashMap<Item, ArrayList<Pair<BlockPos, Vec3d>>> materialDict,
+        HashMap<Item, ArrayList<Tuple<BlockPos, Vec3>>> materialDict,
         Set<ItemStack> toolSet
     ) throws IOException {
         JsonObject root = new JsonObject();
@@ -120,7 +119,7 @@ public final class ConfigSerializer {
 
         if (mapMaterialChests != null) {
             JsonArray materialChestsArray = new JsonArray();
-            for (Pair<BlockPos, Vec3d> pair : mapMaterialChests) {
+            for (Tuple<BlockPos, Vec3> pair : mapMaterialChests) {
                 materialChestsArray.add(blockPosVecPairToJson(pair));
             }
             root.add("mapMaterialChests", materialChestsArray);
@@ -128,11 +127,11 @@ public final class ConfigSerializer {
 
         if (dumpStations != null) {
             JsonArray dumpStationsArray = new JsonArray();
-            for (Pair<Vec3d, Pair<Float, Float>> station : dumpStations) {
+            for (Tuple<Vec3, Tuple<Float, Float>> station : dumpStations) {
                 JsonObject dumpStationObj = new JsonObject();
-                dumpStationObj.add("pos", vec3dToJson(station.getLeft()));
-                dumpStationObj.addProperty("yaw", station.getRight().getLeft());
-                dumpStationObj.addProperty("pitch", station.getRight().getRight());
+                dumpStationObj.add("pos", vec3dToJson(station.getA()));
+                dumpStationObj.addProperty("yaw", station.getB().getA());
+                dumpStationObj.addProperty("pitch", station.getB().getB());
                 dumpStationsArray.add(dumpStationObj);
             }
             root.add("dumpStations", dumpStationsArray);
@@ -143,11 +142,11 @@ public final class ConfigSerializer {
 
         if (materialDict != null) {
             JsonObject materialDictObj = new JsonObject();
-            for (Map.Entry<Item, ArrayList<Pair<BlockPos, Vec3d>>> entry : materialDict.entrySet()) {
-                String blockId = Registries.ITEM.getId(entry.getKey()).toString();
+            for (Map.Entry<Item, ArrayList<Tuple<BlockPos, Vec3>>> entry : materialDict.entrySet()) {
+                String blockId = BuiltInRegistries.ITEM.getKey(entry.getKey()).toString();
 
                 JsonArray chestArray = new JsonArray();
-                for (Pair<BlockPos, Vec3d> pair : entry.getValue()) {
+                for (Tuple<BlockPos, Vec3> pair : entry.getValue()) {
                     chestArray.add(blockPosVecPairToJson(pair));
                 }
 
@@ -163,17 +162,17 @@ public final class ConfigSerializer {
                 // Save item ID
                 stackObj.addProperty(
                     "item",
-                    Registries.ITEM.getId(stack.getItem()).toString()
+                    BuiltInRegistries.ITEM.getKey(stack.getItem()).toString()
                 );
                 // Save enchantments
                 JsonArray enchantmentsArray = new JsonArray();
                 var enchantments = stack.getEnchantments();
-                for (var enchantmentEntry : enchantments.getEnchantmentEntries()) {
-                    enchantmentEntry.getKey().getKey().ifPresent(enchantmentKey -> {
+                for (var enchantmentEntry : enchantments.entrySet()) {
+                    enchantmentEntry.getKey().unwrapKey().ifPresent(enchantmentKey -> {
                         JsonObject enchantmentObj = new JsonObject();
                         enchantmentObj.addProperty(
                             "id",
-                            enchantmentKey.getValue().toString()
+                            enchantmentKey.identifier().toString()
                         );
                         enchantmentObj.addProperty(
                             "level",
